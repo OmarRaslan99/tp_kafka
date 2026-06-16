@@ -1,0 +1,20 @@
+# Ressources du prof (PDFs du cours, genlogs.py d'origine) — non livrables
+ressources/
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Sorties Avro générées (les schémas .avsc restent tracés)
+*.avro
+
+# Cache local (téléchargements, archives — pas livrables)
+.cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
