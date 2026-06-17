@@ -138,16 +138,198 @@ sur un topic existant renvoie `TopicExistsException` (les noms de topics sont un
 - **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 4 — Production / consommation de messages
-*Statut : à faire.*
+*Statut : fait.* (programmes `kafka-console-producer.sh` / `kafka-console-consumer.sh`)
+
+**Q1 — Producteur.** On lance un producteur sur le topic puis on tape quelques lignes
+(chaque ligne = un message). *Sortie réelle (terminal 3) :*
+```
+$ kafka-console-producer.sh --bootstrap-server localhost:9092 --topic premier-topic
+>Hello Romain
+>Romain est tro nul au Padel et tous les sports combines
+>Hello from T3
+>Hello from T3 (2)
+...
+>Hello from T3 (6)
+```
+
+**Q2 — Consommateur « nu » (`--bootstrap-server` + `--topic` seulement).**
+```bash
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic
+# (rien ne s'affiche au démarrage)
+```
+*Réponse :* il **n'affiche rien** au lancement. Par défaut le consommateur ne lit que les
+messages **arrivés après son lancement** (lecture « live » depuis la fin du topic), pas
+l'historique déjà présent.
+
+**Q3 — Les deux ouverts en même temps.** En tapant des messages dans le producteur, ils
+apparaissent **en temps réel** dans le consommateur. *Sortie réelle (terminal 4) :*
+```
+$ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic
+Hello Romain
+Romain est tro nul au Padel et tous les sports combines
+^CProcessed a total of 3 messages
+```
+
+**Q4 — Option `--from-beginning`.** *Sortie réelle (terminal 4) :*
+```
+$ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic --from-beginning
+Hello Romain
+Romain est tro nul au Padel et tous les sports combines
+^CProcessed a total of 3 messages
+```
+*Réponse :* elle fait lire **tous les messages depuis le plus ancien offset** conservé dans
+la partition (et pas seulement les nouveaux). Utile pour rejouer tout l'historique.
+
+**Q5 — Panne simulée + reprise avec `--offset`.** On arrête le consommateur (Ctrl-C)
+pendant que le producteur envoie, puis on relance en ciblant une position précise. `--offset`
+exige de préciser la partition (`--partition`). *Sortie réelle (terminal 4) :*
+```
+$ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic --partition 0 --offset earliest
+Hello Romain
+Romain est tro nul au Padel et tous les sports combines
+^CProcessed a total of 3 messages
+```
+On peut aussi tester `--offset latest` (que les nouveaux) ou `--offset <entier>` (position
+exacte).
+*Réponse :* `--offset N --partition 0` fait reprendre la lecture **à partir de la position N**
+de la partition. Pour ne traiter **que les messages non-lus**, il faudrait reprendre au
+**dernier offset déjà consommé** ; or le consommateur console seul ne mémorise pas cette
+position. C'est exactement ce que résolvent les **groupes de consommateurs** (Exo 5), qui
+sauvegardent l'offset côté Kafka.
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 5 — Groupes et offsets
-*Statut : à faire.*
+*Statut : fait.* (commande `kafka-consumer-groups.sh`)
+
+**Q1 — Assigner un groupe (`--group`).**
+```bash
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic --group mon-groupe --from-beginning
+```
+*Réponse :* avec un `--group`, Kafka **sauvegarde les offsets** consommés dans le topic
+interne `__consumer_offsets`. Si on arrête puis relance un consommateur du **même groupe**,
+il **reprend après le dernier offset validé** (il ne re-lit pas l'historique) — contrairement
+au consommateur sans groupe de l'Exo 4.
+
+**Q2 — Lister les groupes.** *Sortie réelle (terminal 5) :*
+```
+$ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+console-consumer-29451
+console-consumer-92888
+mon-groupe
+```
+*(les `console-consumer-XXXXX` sont les groupes éphémères créés automatiquement par les
+consommateurs sans `--group` des exercices précédents ; `mon-groupe` est le nôtre.)*
+
+**Q3 — Détails d'un groupe.** *Sortie réelle (terminal 5) :*
+```
+$ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group mon-groupe
+GROUP        TOPIC          PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG  CONSUMER-ID                  HOST        CLIENT-ID
+mon-groupe   premier-topic  0          3               3               0    console-consumer-1bd3cf36... /127.0.0.1  console-consumer
+```
+- `CURRENT-OFFSET` : dernier offset commité par le groupe.
+- `LOG-END-OFFSET` : offset de fin (dernier message + 1) dans la partition.
+- `LAG` = `LOG-END-OFFSET − CURRENT-OFFSET` : nombre de messages **non encore traités** (ici 0).
+
+**Q4 — Réinitialiser l'offset au plus ancien.** Le consommateur du groupe doit être
+**arrêté**, sinon Kafka refuse le reset — erreur réellement rencontrée tant que le
+consommateur tournait encore :
+```
+$ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group mon-groupe --reset-offsets --to-earliest --topic premier-topic --execute
+Error: Assignments can only be reset if the group 'mon-groupe' is inactive, but the current state is Stable.
+```
+Une fois le consommateur arrêté, le reset réussit :
+```
+$ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group mon-groupe --reset-offsets --to-earliest --topic premier-topic --execute
+GROUP        TOPIC          PARTITION  NEW-OFFSET
+mon-groupe   premier-topic  0          0
+```
+En relançant le consommateur du groupe, il **re-lit tous les messages depuis le début**
+(`NEW-OFFSET = 0`) : le reset a bien été pris en compte.
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 6 — Parallélisation du traitement
-*Statut : à faire.*
+*Statut : fait.*
+
+**Q1 — 2ᵉ consommateur dans le même groupe (topic à 1 partition).** On lance deux
+consommateurs avec `--group mon-groupe` et on produit des messages.
+*Réponse :* **un seul** des deux consommateurs reçoit les messages ; l'autre reste
+**inactif**. Règle : au sein d'un groupe, **une partition est assignée à un seul
+consommateur** — avec 1 partition, le 2ᵉ consommateur n'a rien à traiter.
+
+**Q2 — Passer le topic à 2 partitions.** *Sortie réelle (terminal 5) :*
+```
+$ kafka-topics.sh --bootstrap-server localhost:9092 --alter --topic premier-topic --partitions 2
+$ kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic premier-topic
+Topic: premier-topic   TopicId: WV18z8nWQ8yekl_6282UEQ   PartitionCount: 2   ReplicationFactor: 1   Configs:
+    Topic: premier-topic   Partition: 0   Leader: 0   Replicas: 0   Isr: 0   Elr: N/A   LastKnownElr: N/A
+    Topic: premier-topic   Partition: 1   Leader: 0   Replicas: 0   Isr: 0   Elr: N/A   LastKnownElr: N/A
+```
+On voit bien désormais **Partition: 0** *et* **Partition: 1**.
+*Note :* on peut seulement **augmenter** le nombre de partitions, jamais le réduire.
+
+**Q3 — Vérifier la répartition sur deux consommateurs.** Avec 2 partitions et 2
+consommateurs du même groupe, chacun se voit assigner **une partition** ; les messages
+produits se répartissent alors entre les deux consommateurs (chaque message va à un seul des
+deux).
+
+*Piège rencontré :* en envoyant des messages **sans clé**, ils sont tous arrivés sur la même
+partition (donc un seul consommateur). En effet, le partitionneur par défaut de Kafka (≥ 2.4)
+est **« sticky »** : il regroupe les messages sans clé sur **une même partition** pour
+optimiser les lots, ce n'est pas un round-robin message par message. Pour forcer la
+répartition, on produit **avec des clés** (la partition vaut `hash(clé) % nb_partitions`) :
+```bash
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic premier-topic \
+  --property parse.key=true --property key.separator=:
+> a:msg1
+> b:msg2
+> c:msg3
+```
+Avec 2 consommateurs du même groupe `mon-groupe`, les 6 messages clés se sont bien
+**répartis sur les deux** : *(sorties réelles)*
+```
+# Terminal 4 (assigné à la partition 0)        # Terminal 6 (assigné à la partition 1)
+msg1                                           msg4
+msg2                                           msg6
+msg3
+msg5
+```
+Chaque message n'est traité que par **un seul** consommateur du groupe : c'est la
+parallélisation recherchée (le traitement est réparti sur les 2 partitions).
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 7 — Plusieurs traitements par message (groupes distincts)
-*Statut : à faire.*
+*Statut : fait.*
+
+**Q1 — Deux consommateurs, deux groupes différents**, sur le même topic :
+```bash
+# Terminal A
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic --group groupe-A
+# Terminal B
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic premier-topic --group groupe-B
+```
+
+**Q2 — Comportement.** Chaque message envoyé dans le topic est reçu **par les deux groupes**
+(un, et un seul, consommateur de **chaque** groupe le traite). Le même message
+(`g: test groupe A et B`, produit en terminal 3) est bien apparu **dans les deux** :
+```
+# Terminal 4 (--group groupe-A)        # Terminal 6 (--group groupe-B)
+ test groupe A et B                     test groupe A et B
+```
+C'est le modèle **publish/subscribe** : des groupes distincts représentent des **traitements
+indépendants** du même flux (à l'inverse de l'Exo 6 où les consommateurs d'un *même* groupe se
+*partagent* les messages).
+
+*Remarque (piège `parse.key`).* Quand le producteur tourne avec `--property parse.key=true`,
+**chaque** ligne doit contenir le séparateur ; sinon il s'arrête sur une exception :
+```
+org.apache.kafka.common.KafkaException: No key separator found on line number 7: 'test groupe A et B'
+```
+→ il faut écrire `clé:valeur` (ex. `g: test groupe A et B`).
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 8 — Explorer ZooKeeper
 *Statut : à faire.*
