@@ -332,7 +332,103 @@ org.apache.kafka.common.KafkaException: No key separator found on line number 7:
 - **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 8 — Explorer ZooKeeper
-*Statut : à faire.*
+*Statut : fait.*
+
+**Q1 — Le répertoire `dataDir` de ZooKeeper.** On relève le `dataDir` dans la config, puis on
+liste son contenu : *(sorties réelles)*
+```
+$ grep -E '^dataDir' ~/kafka/config/zookeeper.properties
+dataDir=/home/raslan/kafka-data/zookeeper
+$ ls -R ~/kafka-data/zookeeper
+/home/raslan/kafka-data/zookeeper:
+version-2
+
+/home/raslan/kafka-data/zookeeper/version-2:
+log.1  log.43  log.c2  snapshot.0  snapshot.42  snapshot.c1
+```
+*Réponse :* ZooKeeper persiste son état sur disque dans `version-2/`, sous deux formes :
+les **snapshots** (`snapshot.*`, image de l'arborescence à un instant T) et les **journaux de
+transactions** (`log.*`, suite des modifications). C'est ce qui permet à ZooKeeper de
+reconstruire son état au redémarrage.
+
+**Q2 — Lancer le shell ZooKeeper.**
+```bash
+zookeeper-shell.sh localhost:2181
+```
+*Réponse :* on obtient un shell rudimentaire (`JLine support is disabled`) : **aucun prompt**
+n'est affiché et **aucune édition de ligne** n'est possible — on tape les commandes « à
+l'aveugle » puis Entrée, comme l'annonce l'énoncé.
+
+**Q3 — Commande inconnue → liste des commandes.** En tapant `help` (commande non reconnue), le
+shell affiche la liste des commandes disponibles : *(extrait de la sortie réelle)*
+```
+addWatch ...      create [-s] [-e] ...   get [-s] [-w] path     ls [-s] [-w] [-R] path
+addauth ...       delete [-v version]    getAcl [-s] path       quit
+close             deleteall path         getAllChildrenNumber   set [-s] [-v] path data
+config            delquota               getEphemerals path     stat [-w] path
+connect host:port history                listquota              version / whoami
+...
+Command not found: Command not found help
+```
+Les commandes utiles pour explorer sont surtout `ls` (lister les enfants d'un znode) et
+`get` (lire le contenu d'un znode).
+
+**Q4 — Trouver au moins deux znodes liés à Kafka.** On part de la racine puis on descend :
+*(sorties réelles)*
+```
+ls /
+[admin, brokers, cluster, config, consumers, controller, controller_epoch, feature,
+ isr_change_notification, latest_producer_id_block, log_dir_event_notification, zookeeper]
+
+ls /brokers/ids
+[0]
+get /brokers/ids/0
+{"features":{},"listener_security_protocol_map":{"PLAINTEXT":"PLAINTEXT"},
+ "endpoints":["PLAINTEXT://DESKTOP-L584EQM.localdomain:9092"],"jmx_port":-1,
+ "port":9092,"host":"DESKTOP-L584EQM.localdomain","version":5,"timestamp":"1781706151709"}
+
+get /brokers/topics/premier-topic
+{"partitions":{"0":[0],"1":[0]},"topic_id":"WV18z8nWQ8yekl_6282UEQ", ... ,"version":3}
+
+get /controller
+{"version":2,"brokerid":0,"timestamp":"1781706151854","kraftControllerEpoch":-1}
+```
+*Réponse — deux znodes liés à Kafka (parmi d'autres) :*
+- **`/brokers/ids/0`** : l'enregistrement du broker `0` — son hôte, son port (`9092`) et ses
+  *endpoints*. C'est ainsi que Kafka sait quels brokers sont vivants (ce znode est **éphémère** :
+  il disparaît si le broker s'arrête).
+- **`/brokers/topics/premier-topic`** : les métadonnées du topic, dont la carte
+  **partition → réplicas**. On y voit bien `"partitions":{"0":[0],"1":[0]}`, soit les **2
+  partitions** (sur le broker `0`) créées à l'Exercice 6.
+- *(bonus)* **`/controller`** indique quel broker joue le rôle de contrôleur (`brokerid:0`).
+
+**Q5 — Observer un changement côté Kafka reflété dans ZooKeeper.** Le shell ZK ouvert, on liste
+les topics, on **crée** un topic dans un autre terminal, puis on re-liste : *(sorties réelles)*
+```
+# avant (dans le shell ZK)
+ls /brokers/topics
+[__consumer_offsets, premier-topic]
+
+# dans un autre terminal Kafka
+$ kafka-topics.sh --bootstrap-server localhost:9092 --create --topic zk-demo --partitions 1 --replication-factor 1
+Created topic zk-demo.
+
+# après (de retour dans le shell ZK)
+ls /brokers/topics
+[__consumer_offsets, premier-topic, zk-demo]
+get /brokers/topics/zk-demo
+{"partitions":{"0":[0]},"topic_id":"i5lmFi0tS0GZAAA0trfk7g", ... ,"version":3}
+```
+*Réponse :* dès la création du topic côté Kafka, un nouveau znode **`/brokers/topics/zk-demo`**
+apparaît **en direct** dans ZooKeeper, avec sa structure de partitions. ZooKeeper est donc bien
+le **dépôt des métadonnées** du cluster (brokers, topics, partitions, contrôleur), mis à jour à
+chaque changement.
+*Nuance importante :* les **offsets des groupes de consommateurs** ne sont **pas** stockés dans
+ZooKeeper mais dans le topic interne **`__consumer_offsets`** (cf. Exercice 5) — on le voit
+d'ailleurs listé parmi les topics ci-dessus.
+*(Le topic de test a ensuite été supprimé : `kafka-topics.sh ... --delete --topic zk-demo`.)*
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 9 — Premiers programmes Python (producteur / moyenne / min-max)
 *Statut : à faire.*
