@@ -738,7 +738,81 @@ git** (`*.avro` dans `.gitignore`) ; seul le schéma `user.avsc` est versionné.
 ### Partie Kafka + Avro
 
 #### Exercice 17 — Sérialisation simple (Avro pour clés/valeurs)
-*Statut : à faire.*
+*Statut : fait.*
+
+On reprend le pipeline de logs de l'Exo 10, mais **clés et valeurs sont encodées en Avro**
+(binaire brut, schéma non embarqué dans le message). Les schémas `.avsc` sont connus des deux
+côtés ; un petit module `src/avro_utils.py` factorise l'encodage/décodage (`DatumWriter`/
+`DatumReader` + `BinaryEncoder`/`BinaryDecoder` via `io.BytesIO`). Topic dédié `logs-avro`
+(3 partitions) pour ne pas mélanger avec le texte brut de `logs`.
+
+**Q1 — Deux schémas.** Un pour la **clé** (`src/log_key.avsc`), un pour la **valeur**
+(`src/log_value_v1.avsc`) :
+```json
+// log_key.avsc                          // log_value_v1.avsc
+{ "type":"record","name":"LogKey",       { "type":"record","name":"LogValue",
+  "namespace":"fr.tp_kafka.opr",           "namespace":"fr.tp_kafka.opr",
+  "fields":[                               "fields":[
+    {"name":"url","type":"string"} ] }       {"name":"ip","type":"string"},
+                                              {"name":"url","type":"string"} ] }
+```
+
+**Q2 — Producteur & consommateur en Avro** (`src/log_producer_avro.py`, `src/log_consumer_avro.py`).
+Le producteur encode clé + valeur en bytes Avro et publie ; le consommateur les décode. *(extrait
+producteur)*
+```
+$ uv run python src/log_producer_avro.py 5 5 1
+Producteur Avro démarré → topic 'logs-avro' (version=1, Ctrl+C pour arrêter)
+envoyé (v1) : 80.81.217.126   https://localhost/Xp2g
+...
+```
+Côté consommateur, la clé et la valeur sont bien **décodées** (et non des octets bruts) :
+```
+[v1] cle=https://localhost/Xp2g  valeur={'ip': '80.81.217.126', 'url': 'https://localhost/Xp2g', ...}
+```
+
+**Q3 — Enrichir le log (date/heure + taille).** Nouvelle version de schéma `log_value_v2.avsc` :
+ajoute `datetime` (string ISO) et `taille` (long, octets téléchargés, aléatoire), chacun avec une
+**valeur par défaut** (utile pour la résolution en Q4) :
+```json
+{ "name":"datetime", "type":"string", "default":"" },
+{ "name":"taille",   "type":"long",   "default":0  }
+```
+*Preuve (message v2 décodé) :*
+```
+[v2] cle=https://localhost/2uBv7xAZn2  valeur={'ip': '101.148.109.140', 'url': '.../2uBv7xAZn2',
+      'datetime': '2026-06-18T10:42:02', 'taille': 9237, 'headers': {...}}
+```
+
+**Q4 — Consommateur compatible plusieurs versions.** Le producteur transmet la **version du
+schéma dans un header Kafka** (`schema_version`). Le consommateur lit ce header, choisit le
+**schéma d'écriture** correspondant, et décode en **résolvant** vers le schéma le plus récent
+(reader = v3) → les champs absents des anciennes versions sont comblés par leurs **valeurs par
+défaut**. Un **même** consommateur lit ainsi v1, v2 et v3 : *(sorties réelles)*
+```
+[v1] ... 'datetime': '',                  'taille': 0,       'headers': {'referer': '-', 'user_agent': '-'}
+[v2] ... 'datetime': '2026-06-18T10:42:02','taille': 9237,    'headers': {'referer': '-', 'user_agent': '-'}
+[v3] ... 'datetime': '2026-06-18T10:42:31','taille': 9698266, 'headers': {'referer': 'https://t.co', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}
+```
+On voit que les **v1** ont `datetime=''`/`taille=0`/headers par défaut, les **v2** ont
+datetime/taille remplis mais headers par défaut, et les **v3** tous les champs.
+
+**Q5 — Headers HTTP dans un record imbriqué.** `log_value_v3.avsc` ajoute un champ `headers` de
+type **record `HttpHeaders { referer, user_agent }`** (contenu aléatoire) :
+```json
+{ "name":"headers", "default":{"referer":"-","user_agent":"-"},
+  "type":{ "type":"record","name":"HttpHeaders",
+           "fields":[ {"name":"referer","type":"string","default":"-"},
+                      {"name":"user_agent","type":"string","default":"-"} ] } }
+```
+La preuve ci-dessus (ligne `[v3]`) montre le record `headers` correctement rempli et décodé.
+
+**Bilan & lien Exo 19.** Le schéma n'étant **pas embarqué** dans les messages, producteur et
+consommateur doivent partager les `.avsc` à l'avance et s'accorder sur la version (ici via un
+header). C'est exactement le besoin que le **Schema Registry** (Confluent, Exo 19) industrialise :
+centraliser les schémas et leur évolution au lieu de les distribuer manuellement.
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 18 *(Bonus)* — fastavro avec Kafka
 *Statut : à faire.*

@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "LogValue",
+  "namespace": "fr.tp_kafka.opr",
+  "doc": "Ligne de log serveur web (v2) : ajoute la date/heure et la taille telechargee.",
+  "fields": [
+    { "name": "ip",       "type": "string", "doc": "Adresse IP du visiteur." },
+    { "name": "url",      "type": "string", "doc": "URL visitee." },
+    { "name": "datetime", "type": "string", "default": "", "doc": "Horodatage ISO de la requete." },
+    { "name": "taille",   "type": "long",   "default": 0,  "doc": "Taille telechargee en octets." }
+  ]
+}

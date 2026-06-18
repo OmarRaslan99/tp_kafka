@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "LogKey",
+  "namespace": "fr.tp_kafka.opr",
+  "doc": "Cle d'un message de log : l'URL visitee (sert au partitionnement).",
+  "fields": [
+    { "name": "url", "type": "string", "doc": "URL visitee." }
+  ]
+}

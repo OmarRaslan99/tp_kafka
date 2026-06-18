@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "LogValue",
+  "namespace": "fr.tp_kafka.opr",
+  "doc": "Ligne de log serveur web (v1) : IP du visiteur et URL visitee.",
+  "fields": [
+    { "name": "ip",  "type": "string", "doc": "Adresse IP du visiteur." },
+    { "name": "url", "type": "string", "doc": "URL visitee." }
+  ]
+}

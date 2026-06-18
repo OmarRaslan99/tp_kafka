@@ -1,409 +1,117 @@
-# Q1 — Créer le topic logs (3 partitions) :
+# Création du topic logs-avro (3 partitions) :
 ```
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ kafka-topics.sh --bootstrap-server localhost:9092 --create --topic logs --partitions 3 --replication-factor 1
-Created topic logs.
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic logs
-Topic: logs     TopicId: L72xK9fLQfqICQT7FcuouA PartitionCount: 3       ReplicationFactor: 1    Configs:
-        Topic: logs     Partition: 0    Leader: 0       Replicas: 0     Isr: 0  Elr: N/A        LastKnownElr: N/A
-        Topic: logs     Partition: 1    Leader: 0       Replicas: 0     Isr: 0  Elr: N/A        LastKnownElr: N/A
-        Topic: logs     Partition: 2    Leader: 0       Replicas: 0     Isr: 0  Elr: N/A        LastKnownElr: N/A
+raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ kafka-topics.sh --bootstrap-server localhost:9092 --create --topic logs-avro --partitions 3 --replication-factor 1
+Created topic logs-avro.
 ```
 
 ---
 
-# Q2 + Q3 — Producteur + 1 consommateur compteur :
-## Terminal Producteur :
+# Produire un mélange de versions (Q2 + Q3 + Q5) :
 ```
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_producer.py 5 5
-/mnt/c/tp_kafka/src/log_producer.py:76: DeprecationWarning: key_serializer does not implement kafka.serializer.Serializer
-  main()
-/mnt/c/tp_kafka/src/log_producer.py:76: DeprecationWarning: value_serializer does not implement kafka.serializer.Serializer
-  main()
-Producteur de logs démarré → topic 'logs' (Ctrl+C pour arrêter)
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 217.86.94.239  https://localhost/jo9eHEPImuFF
-envoyé : 217.86.94.239  https://localhost/jo9eHEPImuFF
-envoyé : 24.94.250.86   https://localhost/sMMxbhksBF1AIS
-envoyé : 217.86.94.239  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/jo9eHEPImuFF
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/jo9eHEPImuFF
-envoyé : 221.186.7.194  https://localhost/jo9eHEPImuFF
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/jo9eHEPImuFF
-envoyé : 217.86.94.239  https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/jo9eHEPImuFF
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/H0Ajd
-envoyé : 217.86.94.239  https://localhost/h1PI
-envoyé : 65.90.207.212  https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 217.86.94.239  https://localhost/H0Ajd
-envoyé : 144.32.110.7   https://localhost/sMMxbhksBF1AIS
-envoyé : 144.32.110.7   https://localhost/H0Ajd
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 65.90.207.212  https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/sMMxbhksBF1AIS
-envoyé : 144.32.110.7   https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 217.86.94.239  https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 217.86.94.239  https://localhost/dvKIjIxoauxu
-envoyé : 144.32.110.7   https://localhost/dvKIjIxoauxu
-envoyé : 144.32.110.7   https://localhost/jo9eHEPImuFF
-envoyé : 217.86.94.239  https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/H0Ajd
-envoyé : 144.32.110.7   https://localhost/jo9eHEPImuFF
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/H0Ajd
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/jo9eHEPImuFF
-envoyé : 65.90.207.212  https://localhost/sMMxbhksBF1AIS
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/jo9eHEPImuFF
-envoyé : 144.32.110.7   https://localhost/dvKIjIxoauxu
-envoyé : 217.86.94.239  https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/jo9eHEPImuFF
-envoyé : 144.32.110.7   https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/jo9eHEPImuFF
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 217.86.94.239  https://localhost/jo9eHEPImuFF
-envoyé : 24.94.250.86   https://localhost/dvKIjIxoauxu
-envoyé : 217.86.94.239  https://localhost/jo9eHEPImuFF
-envoyé : 24.94.250.86   https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 217.86.94.239  https://localhost/sMMxbhksBF1AIS
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/dvKIjIxoauxu
-envoyé : 221.186.7.194  https://localhost/sMMxbhksBF1AIS
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/dvKIjIxoauxu
-envoyé : 221.186.7.194  https://localhost/sMMxbhksBF1AIS
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/dvKIjIxoauxu
-envoyé : 65.90.207.212  https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/H0Ajd
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 65.90.207.212  https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/sMMxbhksBF1AIS
-envoyé : 65.90.207.212  https://localhost/sMMxbhksBF1AIS
-envoyé : 65.90.207.212  https://localhost/H0Ajd
-envoyé : 24.94.250.86   https://localhost/sMMxbhksBF1AIS
-envoyé : 144.32.110.7   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 144.32.110.7   https://localhost/h1PI
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 221.186.7.194  https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 144.32.110.7   https://localhost/jo9eHEPImuFF
-envoyé : 144.32.110.7   https://localhost/dvKIjIxoauxu
-envoyé : 217.86.94.239  https://localhost/jo9eHEPImuFF
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/h1PI
-envoyé : 144.32.110.7   https://localhost/jo9eHEPImuFF
-envoyé : 144.32.110.7   https://localhost/dvKIjIxoauxu
-envoyé : 221.186.7.194  https://localhost/sMMxbhksBF1AIS
-envoyé : 65.90.207.212  https://localhost/H0Ajd
-envoyé : 65.90.207.212  https://localhost/sMMxbhksBF1AIS
-envoyé : 24.94.250.86   https://localhost/jo9eHEPImuFF
-envoyé : 221.186.7.194  https://localhost/H0Ajd
-envoyé : 144.32.110.7   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/dvKIjIxoauxu
-envoyé : 65.90.207.212  https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/dvKIjIxoauxu
-envoyé : 24.94.250.86   https://localhost/h1PI
-envoyé : 221.186.7.194  https://localhost/sMMxbhksBF1AIS
+raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_producer_avro.py 5 5 1
+msProducteur Avro démarré → topic 'logs-avro' (version=1, Ctrl+C pour arrêter)
+envoyé (v1) : 113.126.252.160   https://localhost/oBUutH
+envoyé (v1) : 80.81.217.126     https://localhost/Xp2g
+envoyé (v1) : 113.126.252.160   https://localhost/fbT3Ty8iU
+envoyé (v1) : 186.223.175.92    https://localhost/X01pSTr
+envoyé (v1) : 80.81.217.126     https://localhost/Xp2g
+envoyé (v1) : 233.1.50.93       https://localhost/Hkru4TTb5JCRCYh
+envoyé (v1) : 113.126.252.160   https://localhost/oBUutH
+envoyé (v1) : 113.126.252.160   https://localhost/X01pSTr
+envoyé (v1) : 233.1.50.93       https://localhost/Xp2g
+envoyé (v1) : 216.165.110.152   https://localhost/oBUutH
+envoyé (v1) : 216.165.110.152   https://localhost/oBUutH
+envoyé (v1) : 80.81.217.126     https://localhost/fbT3Ty8iU
+envoyé (v1) : 113.126.252.160   https://localhost/Hkru4TTb5JCRCYh
+envoyé (v1) : 186.223.175.92    https://localhost/fbT3Ty8iU
 ^C
-Arrêt du producteur de logs.
-```
-## Terminal Consommateur 1 :
-```
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_consumer.py
-/mnt/c/tp_kafka/src/log_consumer.py:22: DeprecationWarning: value_deserializer does not implement kafka.serializer.Deserializer
-  consumer = KafkaConsumer(
-Consommateur de logs démarré → topic 'logs' (Ctrl+C pour arrêter)
-[p1] [2026-06-18 09:20] https://localhost/h1PI -> 1
-[p1] [2026-06-18 09:20] https://localhost/h1PI -> 2
-[p1] [2026-06-18 09:20] https://localhost/h1PI -> 3
-[p0] [2026-06-18 09:20] https://localhost/dvKIjIxoauxu -> 1
-[p1] [2026-06-18 09:20] https://localhost/h1PI -> 4
-[p2] [2026-06-18 09:20] https://localhost/H0Ajd -> 1
-[p1] [2026-06-18 09:20] https://localhost/sMMxbhksBF1AIS -> 1
-[p2] [2026-06-18 09:20] https://localhost/H0Ajd -> 2
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 1
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 2
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 1
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 3
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 1
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 4
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 2
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 5
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 6
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 1
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 1
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 2
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 2
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 3
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 4
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 3
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 5
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 3
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 2
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 6
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 4
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 5
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 6
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 7
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 4
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 7
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 8
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 8
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 5
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 9
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 6
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 9
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 7
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 10
-[p0] [2026-06-18 09:21] https://localhost/jo9eHEPImuFF -> 8
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 7
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 10
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 8
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 3
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 11
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 11
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 12
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 9
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 12
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 4
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 13
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 13
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 5
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 14
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 15
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 14
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 15
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 16
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 17
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 18
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 10
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 19
-[p2] [2026-06-18 09:21] https://localhost/H0Ajd -> 11
-[p1] [2026-06-18 09:21] https://localhost/h1PI -> 20
-[p0] [2026-06-18 09:21] https://localhost/dvKIjIxoauxu -> 16
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 6
-[p1] [2026-06-18 09:21] https://localhost/sMMxbhksBF1AIS -> 7
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 1
-[p1] [2026-06-18 09:22] https://localhost/sMMxbhksBF1AIS -> 1
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 1
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 2
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 2
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 3
-[p0] [2026-06-18 09:22] https://localhost/dvKIjIxoauxu -> 1
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 4
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 3
-[p0] [2026-06-18 09:22] https://localhost/jo9eHEPImuFF -> 1
-[p0] [2026-06-18 09:22] https://localhost/dvKIjIxoauxu -> 2
-[p0] [2026-06-18 09:22] https://localhost/jo9eHEPImuFF -> 2
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 4
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 5
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 5
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 6
-[p0] [2026-06-18 09:22] https://localhost/jo9eHEPImuFF -> 3
-[p0] [2026-06-18 09:22] https://localhost/dvKIjIxoauxu -> 3
-[p1] [2026-06-18 09:22] https://localhost/sMMxbhksBF1AIS -> 2
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 6
-[p1] [2026-06-18 09:22] https://localhost/sMMxbhksBF1AIS -> 3
-[p0] [2026-06-18 09:22] https://localhost/jo9eHEPImuFF -> 4
-[p2] [2026-06-18 09:22] https://localhost/H0Ajd -> 7
-[p1] [2026-06-18 09:22] https://localhost/h1PI -> 7
-[p0] [2026-06-18 09:22] https://localhost/dvKIjIxoauxu -> 4
-[p0] [2026-06-18 09:22] https://localhost/dvKIjIxoauxu -> 5
+Arrêt du producteur Avro.
+raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_producer_avro.py 5 5 2
+Producteur Avro démarré → topic 'logs-avro' (version=2, Ctrl+C pour arrêter)
+envoyé (v2) : 101.148.109.140   https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 101.148.109.140   https://localhost/2uBv7xAZn2
+envoyé (v2) : 146.186.43.111    https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 146.186.43.111    https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 155.139.9.229     https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 101.148.109.140   https://localhost/pzUG7Y
+envoyé (v2) : 119.34.94.65      https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 146.186.43.111    https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 101.148.109.140   https://localhost/7Wyr39SATHgLf6UP
+envoyé (v2) : 119.34.94.65      https://localhost/BhiooX
+envoyé (v2) : 101.148.109.140   https://localhost/2uBv7xAZn2
+envoyé (v2) : 101.148.109.140   https://localhost/2uBv7xAZn2
+envoyé (v2) : 101.148.109.140   https://localhost/BhiooX
 ^C
---- Récapitulatif des hits par URL et par minute ---
-2026-06-18 09:20 :
-       4  https://localhost/h1PI
-       2  https://localhost/H0Ajd
-       1  https://localhost/dvKIjIxoauxu
-       1  https://localhost/sMMxbhksBF1AIS
-2026-06-18 09:21 :
-      20  https://localhost/h1PI
-      16  https://localhost/dvKIjIxoauxu
-      11  https://localhost/H0Ajd
-       8  https://localhost/jo9eHEPImuFF
-       7  https://localhost/sMMxbhksBF1AIS
-2026-06-18 09:22 :
-       7  https://localhost/H0Ajd
-       7  https://localhost/h1PI
-       5  https://localhost/dvKIjIxoauxu
-       4  https://localhost/jo9eHEPImuFF
-       3  https://localhost/sMMxbhksBF1AIS
+Arrêt du producteur Avro.
+raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_producer_avro.py 5 5 3
+Producteur Avro démarré → topic 'logs-avro' (version=3, Ctrl+C pour arrêter)
+envoyé (v3) : 244.127.214.158   https://localhost/1eKetz
+envoyé (v3) : 73.164.46.205     https://localhost/wR0wIGoNPx
+envoyé (v3) : 244.127.214.158   https://localhost/dntHPajUdh5V5E
+envoyé (v3) : 147.128.118.58    https://localhost/dntHPajUdh5V5E
+envoyé (v3) : 234.211.168.51    https://localhost/6fFVjgxurd9GAuv
+envoyé (v3) : 255.210.194.254   https://localhost/1eKetz
+envoyé (v3) : 73.164.46.205     https://localhost/wR0wIGoNPx
+envoyé (v3) : 73.164.46.205     https://localhost/1eKetz
+envoyé (v3) : 255.210.194.254   https://localhost/dntHPajUdh5V5E
+envoyé (v3) : 147.128.118.58    https://localhost/6fFVjgxurd9GAuv
+envoyé (v3) : 244.127.214.158   https://localhost/6fFVjgxurd9GAuv
+envoyé (v3) : 234.211.168.51    https://localhost/ZX4m65x1Fg5V
+envoyé (v3) : 244.127.214.158   https://localhost/wR0wIGoNPx
+envoyé (v3) : 244.127.214.158   https://localhost/dntHPajUdh5V5E
+envoyé (v3) : 244.127.214.158   https://localhost/6fFVjgxurd9GAuv
+^C
+Arrêt du producteur Avro.
 ```
 
 ---
 
-# Q5 — Parallélisation : 2ᵉ consommateur même groupe :
-## Terminal Consommateur 1 :
+# Consommer et décoder toutes les versions (Q2 + Q4) :
 ```
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_consumer.py
-/mnt/c/tp_kafka/src/log_consumer.py:22: DeprecationWarning: value_deserializer does not implement kafka.serializer.Deserializer
-  consumer = KafkaConsumer(
-Consommateur de logs démarré → topic 'logs' (Ctrl+C pour arrêter)
-[p2] [2026-06-18 09:26] https://localhost/E7KMnbtLEfiIe8 -> 1
-[p2] [2026-06-18 09:26] https://localhost/PYdlCZxxIsjU -> 1
-[p2] [2026-06-18 09:26] https://localhost/PYdlCZxxIsjU -> 2
-[p2] [2026-06-18 09:26] https://localhost/E7KMnbtLEfiIe8 -> 2
-[p2] [2026-06-18 09:26] https://localhost/E7KMnbtLEfiIe8 -> 3
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 1
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 2
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 3
-[p1] [2026-06-18 09:26] https://localhost/ES4gvkEb -> 1
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 4
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 5
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 6
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 7
-[p1] [2026-06-18 09:26] https://localhost/ES4gvkEb -> 2
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 8
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 9
-[p1] [2026-06-18 09:26] https://localhost/ES4gvkEb -> 3
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 10
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 11
-[p1] [2026-06-18 09:26] https://localhost/ES4gvkEb -> 4
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 1
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 2
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 3
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 4
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 5
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 6
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 7
-[p2] [2026-06-18 09:26] https://localhost/E7KMnbtLEfiIe8 -> 4
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 12
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 13
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 8
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 14
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 15
-[p1] [2026-06-18 09:26] https://localhost/ES4gvkEb -> 5
-[p2] [2026-06-18 09:26] https://localhost/PYdlCZxxIsjU -> 3
-[p1] [2026-06-18 09:26] https://localhost/ES4gvkEb -> 6
-[p2] [2026-06-18 09:26] https://localhost/E7KMnbtLEfiIe8 -> 5
-[p1] [2026-06-18 09:26] https://localhost/femPZhtW1hYL9Ra -> 16
-[p0] [2026-06-18 09:26] https://localhost/nj31DLUcyXGg -> 9
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 1
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 1
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 2
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 2
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 1
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 3
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 4
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 3
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 2
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 3
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 5
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 6
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 7
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 4
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 8
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 9
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 4
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 10
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 5
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 11
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 5
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 6
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 6
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 7
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 7
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 8
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 9
-[p1] [2026-06-18 09:27] https://localhost/ES4gvkEb -> 12
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 8
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 9
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 10
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 11
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 12
-[p1] [2026-06-18 09:27] https://localhost/femPZhtW1hYL9Ra -> 13
-[p0] [2026-06-18 09:27] https://localhost/nj31DLUcyXGg -> 10
+raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_consumer_avro.py
+Consommateur Avro démarré → topic 'logs-avro' (Ctrl+C pour arrêter)
+[v1] cle=https://localhost/Xp2g  valeur={'ip': '80.81.217.126', 'url': 'https://localhost/Xp2g', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/fbT3Ty8iU  valeur={'ip': '113.126.252.160', 'url': 'https://localhost/fbT3Ty8iU', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/X01pSTr  valeur={'ip': '186.223.175.92', 'url': 'https://localhost/X01pSTr', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/Xp2g  valeur={'ip': '80.81.217.126', 'url': 'https://localhost/Xp2g', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/Hkru4TTb5JCRCYh  valeur={'ip': '233.1.50.93', 'url': 'https://localhost/Hkru4TTb5JCRCYh', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/X01pSTr  valeur={'ip': '113.126.252.160', 'url': 'https://localhost/X01pSTr', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/Xp2g  valeur={'ip': '233.1.50.93', 'url': 'https://localhost/Xp2g', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/fbT3Ty8iU  valeur={'ip': '80.81.217.126', 'url': 'https://localhost/fbT3Ty8iU', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/Hkru4TTb5JCRCYh  valeur={'ip': '113.126.252.160', 'url': 'https://localhost/Hkru4TTb5JCRCYh', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/fbT3Ty8iU  valeur={'ip': '186.223.175.92', 'url': 'https://localhost/fbT3Ty8iU', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:01', 'taille': 6004481, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/2uBv7xAZn2  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/2uBv7xAZn2', 'datetime': '2026-06-18T10:42:02', 'taille': 9237, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '146.186.43.111', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:02', 'taille': 1728907, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '146.186.43.111', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:03', 'taille': 7045447, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '155.139.9.229', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:03', 'taille': 5200523, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/pzUG7Y  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/pzUG7Y', 'datetime': '2026-06-18T10:42:05', 'taille': 5028279, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '119.34.94.65', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:06', 'taille': 6725707, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '146.186.43.111', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:06', 'taille': 1169143, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/7Wyr39SATHgLf6UP  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/7Wyr39SATHgLf6UP', 'datetime': '2026-06-18T10:42:08', 'taille': 4196266, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/2uBv7xAZn2  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/2uBv7xAZn2', 'datetime': '2026-06-18T10:42:11', 'taille': 2288294, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/2uBv7xAZn2  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/2uBv7xAZn2', 'datetime': '2026-06-18T10:42:13', 'taille': 2618873, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v3] cle=https://localhost/ZX4m65x1Fg5V  valeur={'ip': '234.211.168.51', 'url': 'https://localhost/ZX4m65x1Fg5V', 'datetime': '2026-06-18T10:42:31', 'taille': 9698266, 'headers': {'referer': 'https://t.co', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v3] cle=https://localhost/dntHPajUdh5V5E  valeur={'ip': '244.127.214.158', 'url': 'https://localhost/dntHPajUdh5V5E', 'datetime': '2026-06-18T10:42:22', 'taille': 4371684, 'headers': {'referer': 'https://t.co', 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}}
+[v3] cle=https://localhost/dntHPajUdh5V5E  valeur={'ip': '147.128.118.58', 'url': 'https://localhost/dntHPajUdh5V5E', 'datetime': '2026-06-18T10:42:23', 'taille': 5340104, 'headers': {'referer': 'https://www.bing.com', 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}}
+[v3] cle=https://localhost/dntHPajUdh5V5E  valeur={'ip': '255.210.194.254', 'url': 'https://localhost/dntHPajUdh5V5E', 'datetime': '2026-06-18T10:42:30', 'taille': 5068180, 'headers': {'referer': '-', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v3] cle=https://localhost/dntHPajUdh5V5E  valeur={'ip': '244.127.214.158', 'url': 'https://localhost/dntHPajUdh5V5E', 'datetime': '2026-06-18T10:42:33', 'taille': 1667674, 'headers': {'referer': 'https://t.co', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v1] cle=https://localhost/oBUutH  valeur={'ip': '113.126.252.160', 'url': 'https://localhost/oBUutH', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/oBUutH  valeur={'ip': '113.126.252.160', 'url': 'https://localhost/oBUutH', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/oBUutH  valeur={'ip': '216.165.110.152', 'url': 'https://localhost/oBUutH', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v1] cle=https://localhost/oBUutH  valeur={'ip': '216.165.110.152', 'url': 'https://localhost/oBUutH', 'datetime': '', 'taille': 0, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/BhiooX  valeur={'ip': '119.34.94.65', 'url': 'https://localhost/BhiooX', 'datetime': '2026-06-18T10:42:10', 'taille': 6772051, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v2] cle=https://localhost/BhiooX  valeur={'ip': '101.148.109.140', 'url': 'https://localhost/BhiooX', 'datetime': '2026-06-18T10:42:14', 'taille': 808800, 'headers': {'referer': '-', 'user_agent': '-'}}
+[v3] cle=https://localhost/1eKetz  valeur={'ip': '244.127.214.158', 'url': 'https://localhost/1eKetz', 'datetime': '2026-06-18T10:42:20', 'taille': 5778375, 'headers': {'referer': 'https://www.google.com', 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}}
+[v3] cle=https://localhost/wR0wIGoNPx  valeur={'ip': '73.164.46.205', 'url': 'https://localhost/wR0wIGoNPx', 'datetime': '2026-06-18T10:42:20', 'taille': 999741, 'headers': {'referer': '-', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v3] cle=https://localhost/6fFVjgxurd9GAuv  valeur={'ip': '234.211.168.51', 'url': 'https://localhost/6fFVjgxurd9GAuv', 'datetime': '2026-06-18T10:42:24', 'taille': 6425899, 'headers': {'referer': 'https://t.co', 'user_agent': 'curl/8.4.0'}}
+[v3] cle=https://localhost/1eKetz  valeur={'ip': '255.210.194.254', 'url': 'https://localhost/1eKetz', 'datetime': '2026-06-18T10:42:26', 'taille': 7812907, 'headers': {'referer': 'https://www.bing.com', 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}}
+[v3] cle=https://localhost/wR0wIGoNPx  valeur={'ip': '73.164.46.205', 'url': 'https://localhost/wR0wIGoNPx', 'datetime': '2026-06-18T10:42:27', 'taille': 1555319, 'headers': {'referer': 'https://www.google.com', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v3] cle=https://localhost/1eKetz  valeur={'ip': '73.164.46.205', 'url': 'https://localhost/1eKetz', 'datetime': '2026-06-18T10:42:29', 'taille': 9612453, 'headers': {'referer': 'https://www.google.com', 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}}
+[v3] cle=https://localhost/6fFVjgxurd9GAuv  valeur={'ip': '147.128.118.58', 'url': 'https://localhost/6fFVjgxurd9GAuv', 'datetime': '2026-06-18T10:42:30', 'taille': 436389, 'headers': {'referer': 'https://t.co', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v3] cle=https://localhost/6fFVjgxurd9GAuv  valeur={'ip': '244.127.214.158', 'url': 'https://localhost/6fFVjgxurd9GAuv', 'datetime': '2026-06-18T10:42:30', 'taille': 841345, 'headers': {'referer': 'https://www.google.com', 'user_agent': 'Mozilla/5.0 (X11; Linux x86_64)'}}
+[v3] cle=https://localhost/wR0wIGoNPx  valeur={'ip': '244.127.214.158', 'url': 'https://localhost/wR0wIGoNPx', 'datetime': '2026-06-18T10:42:32', 'taille': 5494551, 'headers': {'referer': 'https://www.bing.com', 'user_agent': 'curl/8.4.0'}}
+[v3] cle=https://localhost/6fFVjgxurd9GAuv  valeur={'ip': '244.127.214.158', 'url': 'https://localhost/6fFVjgxurd9GAuv', 'datetime': '2026-06-18T10:42:35', 'taille': 9785095, 'headers': {'referer': 'https://www.bing.com', 'user_agent': 'curl/8.4.0'}}
 ^C
---- Récapitulatif des hits par URL et par minute ---
-2026-06-18 09:26 :
-      16  https://localhost/femPZhtW1hYL9Ra
-       9  https://localhost/nj31DLUcyXGg
-       6  https://localhost/ES4gvkEb
-       5  https://localhost/E7KMnbtLEfiIe8
-       3  https://localhost/PYdlCZxxIsjU
-2026-06-18 09:27 :
-      13  https://localhost/femPZhtW1hYL9Ra
-      12  https://localhost/ES4gvkEb
-      10  https://localhost/nj31DLUcyXGg
-```
-## Terminal Consommateur 2 :
-```
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ uv run python src/log_consumer.py
-/mnt/c/tp_kafka/src/log_consumer.py:22: DeprecationWarning: value_deserializer does not implement kafka.serializer.Deserializer
-  consumer = KafkaConsumer(
-Consommateur de logs démarré → topic 'logs' (Ctrl+C pour arrêter)
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 1
-[p2] [2026-06-18 09:27] https://localhost/PYdlCZxxIsjU -> 1
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 2
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 3
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 4
-[p2] [2026-06-18 09:27] https://localhost/PYdlCZxxIsjU -> 2
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 5
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 6
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 7
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 8
-[p2] [2026-06-18 09:27] https://localhost/PYdlCZxxIsjU -> 3
-[p2] [2026-06-18 09:27] https://localhost/PYdlCZxxIsjU -> 4
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 9
-[p2] [2026-06-18 09:27] https://localhost/PYdlCZxxIsjU -> 5
-[p2] [2026-06-18 09:27] https://localhost/E7KMnbtLEfiIe8 -> 10
-[p2] [2026-06-18 09:27] https://localhost/PYdlCZxxIsjU -> 6
-[p2] [2026-06-18 09:28] https://localhost/E7KMnbtLEfiIe8 -> 1
-[p1] [2026-06-18 09:28] https://localhost/femPZhtW1hYL9Ra -> 1
-[p1] [2026-06-18 09:28] https://localhost/femPZhtW1hYL9Ra -> 2
-^C
---- Récapitulatif des hits par URL et par minute ---
-2026-06-18 09:27 :
-      10  https://localhost/E7KMnbtLEfiIe8
-       6  https://localhost/PYdlCZxxIsjU
-2026-06-18 09:28 :
-       2  https://localhost/femPZhtW1hYL9Ra
-       1  https://localhost/E7KMnbtLEfiIe8
-```
-## la sortie du --describe :
-```
-raslan@DESKTOP-L584EQM:/mnt/c/tp_kafka$ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group log-counter
-
-GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                             HOST            CLIENT-ID
-log-counter     logs            0          61              61              0               kafka-python-3.0.0-8e869e9b-50ca-43ef-a05d-9f5a175d85dd /127.0.0.1      kafka-python-3.0.0
-log-counter     logs            1          97              99              2               kafka-python-3.0.0-8e869e9b-50ca-43ef-a05d-9f5a175d85dd /127.0.0.1      kafka-python-3.0.0
-log-counter     logs            2          151             152             1               kafka-python-3.0.0-b290248e-6956-4661-82cb-bfb2c1c41d55 /127.0.0.1      kafka-python-3.0.0
+Arrêt du consommateur Avro.
 ```
