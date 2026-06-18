@@ -431,7 +431,104 @@ d'ailleurs listé parmi les topics ci-dessus.
 - **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 9 — Premiers programmes Python (producteur / moyenne / min-max)
-*Statut : à faire.*
+*Statut : fait.*
+
+Première phase **en Python** avec la bibliothèque `kafka-python`, lancée via `uv`. Trois
+programmes dans `src/` : un producteur de nombres aléatoires et deux consommateurs d'analyse.
+On utilise un **topic dédié `nombres`** (1 partition).
+
+**Q1 — Installer et vérifier `kafka-python`.** La dépendance `kafka-python>=3.0.0` est déclarée
+dans `pyproject.toml` (gérée par `uv`). Vérification : *(sortie réelle)*
+```
+$ uv run python -c "import kafka; print('version =', kafka.__version__)"
+version = 3.0.0
+```
+La bibliothèque s'importe correctement (l'énoncé demande aussi `help(kafka)`, qui ouvre la
+documentation intégrée). *Documentation : https://kafka-python.readthedocs.io/*
+
+**Création du topic.** *(sortie réelle)*
+```
+$ kafka-topics.sh --bootstrap-server localhost:9092 --create --topic nombres --partitions 1 --replication-factor 1
+Created topic nombres.
+$ kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic nombres
+Topic: nombres  TopicId: retYJyPUQpm1by66jOU_gg  PartitionCount: 1  ReplicationFactor: 1  Configs:
+    Topic: nombres  Partition: 0  Leader: 0  Replicas: 0  Isr: 0  Elr: N/A  LastKnownElr: N/A
+```
+
+**Q2 — Producteur de nombres aléatoires** (`src/producer_nombres.py`). Un message par seconde,
+nombre entre 0 et 10000 :
+```python
+producer = KafkaProducer(
+    bootstrap_servers="localhost:9092",
+    value_serializer=lambda v: str(v).encode("utf-8"),
+)
+while True:
+    nombre = random.randint(0, 10000)
+    producer.send("nombres", nombre)
+    time.sleep(1)
+```
+*Sortie réelle (extrait) :*
+```
+Producteur démarré → topic 'nombres' (Ctrl+C pour arrêter)
+envoyé : 9620
+envoyé : 6908
+envoyé : 7168
+envoyé : 15
+...
+^C
+Arrêt du producteur.
+```
+
+**Q3 — Consommateur « moyenne »** (`src/consumer_moyenne.py`). Groupe dédié `moyenne` ; il
+maintient une somme et un compteur, et affiche la moyenne courante. *Sortie réelle (extraits) :*
+```
+Consommateur 'moyenne' démarré → topic 'nombres' (Ctrl+C pour arrêter)
+reçu :  9620  |  moyenne (1 valeurs) = 9620.00
+reçu :  6908  |  moyenne (2 valeurs) = 8264.00
+reçu :    15  |  moyenne (4 valeurs) = 5927.75
+...
+reçu :  7029  |  moyenne (108 valeurs) = 5511.11
+```
+On voit la moyenne **converger vers ~5000** (≈ espérance d'un tirage uniforme sur [0, 10000]) à
+mesure que les valeurs s'accumulent.
+
+**Q4 — Consommateur « min / max »** (`src/consumer_minmax.py`). Groupe **distinct** `minmax`.
+*Sortie réelle (extraits) :*
+```
+Consommateur 'minmax' démarré → topic 'nombres' (Ctrl+C pour arrêter)
+reçu :  9620  |  min =  9620  max =  9620
+reçu :    15  |  min =    15  max =  9620
+reçu :  9834  |  min =    15  max =  9834
+reçu :  9852  |  min =    15  max =  9852
+...
+reçu :  7029  |  min =    15  max =  9852
+```
+Le **min** descend à `15` et le **max** monte à `9852`, puis se stabilisent (ils ne peuvent que
+s'élargir).
+
+**Q5 — Les faire tourner en même temps.** Les trois programmes ont tourné simultanément
+(3 terminaux). Comme `moyenne` et `minmax` sont dans des **groupes différents**, ils reçoivent
+**chacun tous** les nombres produits (modèle publish/subscribe, cf. Exo 7) : les 108 valeurs
+émises par le producteur apparaissent bien dans les deux consommateurs, qui calculent leurs
+statistiques en parallèle et en temps réel.
+
+**Q6 — Distribuer le calcul si le débit devient trop important.** On réutilise le mécanisme de
+l'**Exercice 6** : **augmenter le nombre de partitions** du topic `nombres`, puis lancer
+**plusieurs instances d'un même consommateur dans le même groupe** (ex. plusieurs `moyenne`
+avec `group_id="moyenne"`). Kafka répartit alors les partitions entre ces instances, qui
+peuvent tourner sur **plusieurs machines** — le traitement est parallélisé. Limite à garder en
+tête : chaque instance ne voit qu'**une partie** des données, donc pour une statistique globale
+(moyenne, min, max) il faut une **étape d'agrégation finale** combinant les résultats partiels
+de chaque consommateur (par exemple : sommes + compteurs partiels additionnés pour la moyenne ;
+min des min et max des max). *(Réponse théorique — la parallélisation effective relève des
+exercices bonus.)*
+
+*Remarque technique.* `kafka-python` émet un `DeprecationWarning` (« value_serializer /
+value_deserializer does not implement kafka.serializer.Serializer ») car on passe une simple
+`lambda` au lieu d'une classe `Serializer` dédiée. C'est **sans conséquence** sur le
+fonctionnement ; on garde les lambdas pour la simplicité.
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 10 *(Bonus)* — Centralisation de logs dans Kafka
 *Statut : à faire.*
