@@ -542,10 +542,117 @@ fonctionnement ; on garde les lambdas pour la simplicité.
 ### Partie Avro
 
 #### Exercice 13 — Installer Avro
-*Statut : à faire.*
+*Statut : fait.*
+
+On ajoute le package `avro` au projet (équivalent du `pip3 install avro` de l'énoncé, mais géré
+par `uv`), puis on vérifie l'import. *(sorties réelles)*
+```
+$ uv add avro
+...
+ + avro==1.12.1
+$ uv run python -c "import avro; import avro.schema; print('avro version =', avro.__version__)"
+avro version = 1.12.1
+```
+L'import de `avro.schema` fonctionne (l'énoncé suggère aussi `help(avro.schema)`, qui affiche la
+doc intégrée du module). *Documentation : https://avro.apache.org/docs/current/*
 
 #### Exercice 14 — Premiers pas avec Avro
-*Statut : à faire.*
+*Statut : fait.*
+
+On écrit un schéma Avro, on sérialise une liste de personnes dans un fichier `.avro`, on le
+relit, puis on fait **évoluer le schéma** (intérêts → enum → entreprise optionnelle). Trois
+fichiers : `src/user.avsc` (schéma), `src/avro_serialize.py`, `src/avro_read.py`.
+
+**Q1 — Liste de personnes (dict).** Chaque personne a au minimum un `nom` et un `age` :
+```python
+personnes = [
+    {"nom": "Omar", "age": 25, ...},
+    {"nom": "Priscile", "age": 23, ...},
+    {"nom": "Romain", "age": 24, ...},
+]
+```
+
+**Q2 — Schéma `user.avsc`.** Un `record` avec un **`namespace`** propre au groupe et un champ
+**`doc`** décrivant l'objet (état de départ, nom + âge) :
+```json
+{
+  "type": "record",
+  "name": "Personne",
+  "namespace": "fr.tp_kafka.opr",
+  "doc": "Decrit une personne ... (groupe Omar/Priscile/Romain).",
+  "fields": [
+    { "name": "nom", "type": "string", "doc": "Nom de la personne." },
+    { "name": "age", "type": "int",    "doc": "Age en annees." }
+  ]
+}
+```
+
+**Q3 — Sérialisation** (`avro_serialize.py`) : on charge le schéma et on écrit les personnes dans
+`users.avro` avec `DataFileWriter` + `DatumWriter` :
+```python
+schema = avro.schema.parse(open("src/user.avsc").read())
+writer = DataFileWriter(open("src/users.avro", "wb"), DatumWriter(), schema)
+for personne in personnes:
+    writer.append(personne)
+writer.close()
+```
+*Sortie réelle :*
+```
+$ uv run python src/avro_serialize.py
+3 personnes sérialisées dans /mnt/c/tp_kafka/src/users.avro
+```
+
+**Q4 — Lecture** (`avro_read.py`) : le schéma est **embarqué** dans le fichier `.avro`, donc
+inutile de le fournir pour relire. `DataFileReader` + `DatumReader` :
+```python
+reader = DataFileReader(open("src/users.avro", "rb"), DatumReader())
+for personne in reader:
+    print(personne)
+reader.close()
+```
+
+**Q5 — Ajout des centres d'intérêt (liste de strings).** On ajoute au schéma un champ tableau :
+```json
+{ "name": "interets", "type": { "type": "array", "items": "string" } }
+```
+
+**Q6 — Intérêts pris dans une liste prédéfinie (enum).** On remplace `"string"` par un **`enum`**
+Avro, qui contraint les valeurs possibles :
+```json
+{
+  "name": "interets",
+  "type": { "type": "array",
+            "items": { "type": "enum", "name": "Interet",
+                       "symbols": ["SPORT","MUSIQUE","LECTURE","CINEMA","VOYAGE","CUISINE"] } }
+}
+```
+
+**Q7 — Champ optionnel `entreprise`.** On ajoute un `record` `Entreprise` (`nom`, `siret`,
+`effectifs`), rendu **optionnel** par une **union `["null", ...]`** avec `default: null` :
+```json
+{
+  "name": "entreprise",
+  "default": null,
+  "type": [ "null",
+    { "type": "record", "name": "Entreprise",
+      "fields": [ {"name":"nom","type":"string"},
+                  {"name":"siret","type":"string"},
+                  {"name":"effectifs","type":"int"} ] } ]
+}
+```
+
+**Résultat final** — la relecture (`avro_read.py`) montre bien les personnes avec intérêts (enum)
+et entreprise optionnelle (`None` pour Priscile, qui n'a pas d'employeur) : *(sortie réelle)*
+```
+{'nom': 'Omar', 'age': 25, 'interets': ['SPORT', 'VOYAGE'], 'entreprise': {'nom': 'Padel SAS', 'siret': '12345678900011', 'effectifs': 12}}
+{'nom': 'Priscile', 'age': 23, 'interets': ['LECTURE', 'MUSIQUE', 'CINEMA'], 'entreprise': None}
+{'nom': 'Romain', 'age': 24, 'interets': ['CUISINE', 'VOYAGE', 'SPORT'], 'entreprise': {'nom': 'DataCorp', 'siret': '98765432100022', 'effectifs': 250}}
+```
+
+*Note (fichiers générés).* `users.avro` est un artefact binaire régénérable → il est **ignoré par
+git** (`*.avro` dans `.gitignore`) ; seul le schéma `user.avsc` est versionné.
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 15 *(Bonus)* — Sérialisation sans fichiers (BytesIO)
 *Statut : à faire.*

@@ -1,0 +1,39 @@
+{
+  "type": "record",
+  "name": "Personne",
+  "namespace": "fr.tp_kafka.opr",
+  "doc": "Decrit une personne : identite, centres d'interet et employeur eventuel. Schema du TP Kafka (groupe Omar/Priscile/Romain).",
+  "fields": [
+    { "name": "nom", "type": "string", "doc": "Nom de la personne." },
+    { "name": "age", "type": "int", "doc": "Age en annees." },
+    {
+      "name": "interets",
+      "doc": "Centres d'interet, choisis dans une liste predefinie (enum).",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "enum",
+          "name": "Interet",
+          "symbols": ["SPORT", "MUSIQUE", "LECTURE", "CINEMA", "VOYAGE", "CUISINE"]
+        }
+      }
+    },
+    {
+      "name": "entreprise",
+      "doc": "Employeur de la personne (optionnel : null si sans emploi).",
+      "default": null,
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "Entreprise",
+          "fields": [
+            { "name": "nom", "type": "string", "doc": "Nom de l'entreprise." },
+            { "name": "siret", "type": "string", "doc": "Numero SIRET." },
+            { "name": "effectifs", "type": "int", "doc": "Nombre d'employes." }
+          ]
+        }
+      ]
+    }
+  ]
+}
