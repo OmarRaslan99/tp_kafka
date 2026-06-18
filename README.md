@@ -531,7 +531,82 @@ fonctionnement ; on garde les lambdas pour la simplicité.
 - **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 10 *(Bonus)* — Centralisation de logs dans Kafka
-*Statut : à faire.*
+*Statut : fait.*
+
+On centralise des logs de serveur web simulés dans Kafka, puis on les analyse. Le script fourni
+`ressources/genlogs.py` génère ~1 ligne/seconde au format `IP<TAB>URL` (fréquentation pondérée).
+On en a fait une **version Kafka** dans `src/log_producer.py` (on ne modifie pas le script du
+prof) et un consommateur analytique `src/log_consumer.py`.
+
+**Q1 — Topic des logs (3 partitions).** *(sortie réelle)*
+```
+$ kafka-topics.sh --bootstrap-server localhost:9092 --create --topic logs --partitions 3 --replication-factor 1
+Created topic logs.
+$ kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic logs
+Topic: logs  TopicId: L72xK9fLQfqICQT7FcuouA  PartitionCount: 3  ReplicationFactor: 1  Configs:
+    Topic: logs  Partition: 0  Leader: 0  ...
+    Topic: logs  Partition: 1  Leader: 0  ...
+    Topic: logs  Partition: 2  Leader: 0  ...
+```
+
+**Q2 — Producteur de logs** (`src/log_producer.py`). On reprend `randomip`/`randomurl` et les
+pondérations de `genlogs.py`, mais on **publie dans le topic** au lieu d'imprimer. **Choix :
+l'URL est mise en clé** du message → tous les hits d'une même URL tombent sur la **même
+partition** (comptage cohérent quand on parallélise, cf. Q5).
+```python
+producer.send("logs", key=url, value="%s\t%s" % (user, url))   # clé = URL
+```
+*Sortie réelle (extrait), lancée avec 5 IP et 5 URL (`uv run python src/log_producer.py 5 5`) :*
+```
+Producteur de logs démarré → topic 'logs' (Ctrl+C pour arrêter)
+envoyé : 24.94.250.86   https://localhost/H0Ajd
+envoyé : 217.86.94.239  https://localhost/jo9eHEPImuFF
+...
+```
+
+**Q3 — Consommateur compteur** (`src/log_consumer.py`). Pour chaque message, on extrait l'URL et
+on incrémente `compteurs[minute][url]` (minute courante `AAAA-MM-JJ HH:MM`). Un seul consommateur
+voit alors les 3 partitions. *Récapitulatif réel sur Ctrl+C (une minute) :*
+```
+2026-06-18 09:21 :
+      20  https://localhost/h1PI
+      16  https://localhost/dvKIjIxoauxu
+      11  https://localhost/H0Ajd
+       8  https://localhost/jo9eHEPImuFF
+       7  https://localhost/sMMxbhksBF1AIS
+```
+On retrouve bien la **pondération** de `genlogs.py` (quelques URL nettement plus visitées) et le
+**comptage par minute** demandé. *(Stockage en simple dict Python, comme le permet l'énoncé.)*
+
+**Q4 — Si l'analyse ne suit pas le débit.**
+- **Topic :** augmenter le **nombre de partitions** (condition pour avoir plus de consommateurs en
+  parallèle) ; allonger la **rétention** pour ne pas perdre le backlog le temps de rattraper.
+- **Consumer :** lancer **plusieurs instances dans le même groupe** (scale-out : Kafka répartit
+  les partitions) ; alléger le traitement par message.
+- **Producer :** **partitionner par clé** (ici l'URL) pour équilibrer la charge tout en gardant le
+  comptage cohérent ; activer **batching/compression** pour absorber les pics.
+- C'est le même levier qu'à l'**Exercice 6** (parallélisation par partitions).
+
+**Q5 — Implémentation et vérification.** Topic déjà à 3 partitions → on lance **2 consommateurs**
+avec le même `group_id="log-counter"`. Kafka **répartit les partitions** entre eux : *(sortie
+réelle de `--describe`)*
+```
+GROUP        TOPIC  PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG  CONSUMER-ID
+log-counter  logs   0          61              61              0    kafka-python-...-d85dd
+log-counter  logs   1          97              99              2    kafka-python-...-d85dd
+log-counter  logs   2          151             152             1    kafka-python-...-41d55
+```
+→ le consommateur `...d85dd` détient les **partitions 0 et 1**, le consommateur `...41d55` la
+**partition 2**. Conséquence visible dans leurs sorties : ils comptent des **URL distinctes**
+(grâce au keying par URL, aucune URL n'est comptée par les deux) :
+```
+# Consommateur 1 (partitions 0,1)           # Consommateur 2 (partition 2)
+femPZhtW1hYL9Ra, nj31DLUcyXGg, ES4gvkEb      E7KMnbtLEfiIe8, PYdlCZxxIsjU
+```
+La charge d'analyse est donc bien **distribuée** sur les deux consommateurs, sans étape de fusion
+des compteurs. *(Le `LAG` non nul vient du producteur encore actif au moment du `--describe`.)*
+
+- **Qui a fait quoi :** _à compléter_.
 
 #### Exercice 11 *(Bonus)* — Déploiement pseudo-distribué
 *Statut : à faire.*
