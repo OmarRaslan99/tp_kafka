@@ -1,56 +1,6 @@
 # TP Kafka — Stream Processing
 
-**Module :** Traitement temps-réel avec Kafka (Sylvain Gault)
-
-**Groupe :** Omar · Priscile · Romain
-
-> Ce document sert de **rapport** rendu avec le TP. Les questions sont numérotées par
-> exercice ; pour chaque exercice on indique **qui a fait quoi** (code / tests / rapport).
-
----
-
-## Environnement & reproduction
-
-| Composant | Choix |
-|---|---|
-| OS hôte | Windows 10 |
-| Runtime | **WSL2 — Ubuntu 22.04** (Kafka, ZooKeeper et Python y tournent) |
-| Java | **Temurin OpenJDK 17.0.19** (installé dans `~/jdk-17`) |
-| Kafka | **Apache Kafka 3.9.1** (Scala 2.13), **mode ZooKeeper** (installé dans `~/kafka`) |
-| Code projet | `C:\tp_kafka` (Windows), vu depuis WSL comme `/mnt/c/tp_kafka` |
-| Outillage Python | **uv** (`pyproject.toml` / `uv.lock`), **Python 3.11**, venv `.venv/` (ignoré) |
-| Lib Python | **kafka-python 3.0.0** |
-
-**Note d'installation.** Sur cette machine, la connectivité Internet sortante de WSL2
-était cassée (NAT/HNS), tandis que Windows avait accès au réseau. Java et Kafka ont donc
-été **téléchargés côté Windows puis installés dans WSL** via `/mnt/c`. Cela ne change rien
-au fonctionnement : tout s'exécute ensuite localement dans WSL. Le réseau WSL a ensuite été
-réparé (`Restart-Service hns` en PowerShell admin), ce qui a permis d'installer `uv` et
-`kafka-python`.
-
-### Mise en place de l'outillage Python (reproduction)
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh   # installe uv
-cd /mnt/c/tp_kafka
-uv init --name tp-kafka --python 3.11
-uv add kafka-python
-uv run python -c "import kafka; print(kafka.__version__)"   # vérif
-```
-
-L'environnement (`JAVA_HOME`, `PATH` vers `kafka/bin`) est défini dans
-[`scripts/env.sh`](scripts/env.sh) — **à sourcer dans chaque terminal WSL** (on ne modifie
-pas `~/.bashrc`).
-
-### Lancer l'environnement (rappel commandes)
-```bash
-# Dans CHAQUE terminal WSL, d'abord :
-source /mnt/c/tp_kafka/scripts/env.sh
-
-# Terminal 1 — ZooKeeper
-zookeeper-server-start.sh ~/kafka/config/zookeeper.properties
-# Terminal 2 — Broker Kafka
-kafka-server-start.sh ~/kafka/config/server.properties
-```
+**Groupe :** Omar MOSTAFA · Priscile MAWUT · Romain SCIANDRA
 
 ---
 
@@ -59,13 +9,11 @@ kafka-server-start.sh ~/kafka/config/server.properties
 ### Partie Kafka
 
 #### Exercice 1 — Installation de Kafka
-*Statut : fait (phase Set up).*
 - Kafka 3.9 (Scala 2.13) téléchargé et décompressé, installé dans `~/kafka` (WSL).
 - Programmes Linux dans `bin/` ; programmes Windows dans `bin/windows/`. On utilise `bin/` (.sh).
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Omar** — téléchargement et installation de Kafka dans WSL, choix des binaires Linux (`bin/`) et mise en place de `scripts/env.sh`.
 
 #### Exercice 2 — Déploiement local (ZooKeeper + Kafka)
-*Statut : fait.*
 
 **Configuration.** On a modifié les répertoires de données pour les sortir de `/tmp`
 (purgé à chaque redémarrage de WSL, donc on perdrait topics et messages) :
@@ -99,10 +47,10 @@ Pour lancer un **2ᵉ broker** sur la même machine, il faut donc lui donner :
 - un port `listeners` **distinct** (sinon conflit sur 9092).
 *(C'est ce qu'on fera à l'Exercice 11 — déploiement pseudo-distribué.)*
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Omar** — configuration de `zookeeper.properties`/`server.properties` (sortie des données de `/tmp`), démarrage des deux serveurs et test du verrou sur un 2ᵉ broker.
 
 #### Exercice 3 — Gestion de topic
-*Statut : fait.* (commandes via `kafka-topics.sh`, broker sur `localhost:9092`)
+(commandes via `kafka-topics.sh`, broker sur `localhost:9092`)
 
 ```bash
 # 1) lister les topics (vide au départ)
@@ -135,10 +83,10 @@ Topic: premier-topic   TopicId: WV18z8nWQ8yekl_6282UEQ   PartitionCount: 1   Rep
 **Remarque (énoncé).** Le **renommage** d'un topic n'est pas supporté ; relancer `--create`
 sur un topic existant renvoie `TopicExistsException` (les noms de topics sont uniques).
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Omar** — création et inspection du topic `premier-topic` (`kafka-topics.sh`) et lecture du `--describe`.
 
 #### Exercice 4 — Production / consommation de messages
-*Statut : fait.* (programmes `kafka-console-producer.sh` / `kafka-console-consumer.sh`)
+(programmes `kafka-console-producer.sh` / `kafka-console-consumer.sh`)
 
 **Q1 — Producteur.** On lance un producteur sur le topic puis on tape quelques lignes
 (chaque ligne = un message). *Sortie réelle (terminal 3) :*
@@ -197,10 +145,10 @@ de la partition. Pour ne traiter **que les messages non-lus**, il faudrait repre
 position. C'est exactement ce que résolvent les **groupes de consommateurs** (Exo 5), qui
 sauvegardent l'offset côté Kafka.
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Priscile** — tests producteur/consommateur console et options `--from-beginning`, `--offset`/`--partition`.
 
 #### Exercice 5 — Groupes et offsets
-*Statut : fait.* (commande `kafka-consumer-groups.sh`)
+(commande `kafka-consumer-groups.sh`)
 
 **Q1 — Assigner un groupe (`--group`).**
 ```bash
@@ -247,10 +195,9 @@ mon-groupe   premier-topic  0          0
 En relançant le consommateur du groupe, il **re-lit tous les messages depuis le début**
 (`NEW-OFFSET = 0`) : le reset a bien été pris en compte.
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Priscile** — groupes de consommateurs et gestion des offsets (`kafka-consumer-groups.sh`), reset au plus ancien.
 
 #### Exercice 6 — Parallélisation du traitement
-*Statut : fait.*
 
 **Q1 — 2ᵉ consommateur dans le même groupe (topic à 1 partition).** On lance deux
 consommateurs avec `--group mon-groupe` et on produit des messages.
@@ -298,10 +245,9 @@ msg5
 Chaque message n'est traité que par **un seul** consommateur du groupe : c'est la
 parallélisation recherchée (le traitement est réparti sur les 2 partitions).
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Priscile** — passage à 2 partitions, diagnostic du partitionneur « sticky » et vérification de la répartition par clés.
 
 #### Exercice 7 — Plusieurs traitements par message (groupes distincts)
-*Statut : fait.*
 
 **Q1 — Deux consommateurs, deux groupes différents**, sur le même topic :
 ```bash
@@ -329,10 +275,9 @@ org.apache.kafka.common.KafkaException: No key separator found on line number 7:
 ```
 → il faut écrire `clé:valeur` (ex. `g: test groupe A et B`).
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Priscile** — mise en place de deux groupes distincts (publish/subscribe) et test de la double consommation.
 
 #### Exercice 8 — Explorer ZooKeeper
-*Statut : fait.*
 
 **Q1 — Le répertoire `dataDir` de ZooKeeper.** On relève le `dataDir` dans la config, puis on
 liste son contenu : *(sorties réelles)*
@@ -428,10 +373,9 @@ ZooKeeper mais dans le topic interne **`__consumer_offsets`** (cf. Exercice 5) �
 d'ailleurs listé parmi les topics ci-dessus.
 *(Le topic de test a ensuite été supprimé : `kafka-topics.sh ... --delete --topic zk-demo`.)*
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Omar** — exploration de ZooKeeper (`zookeeper-shell.sh`), repérage des znodes Kafka et observation des mises à jour.
 
 #### Exercice 9 — Premiers programmes Python (producteur / moyenne / min-max)
-*Statut : fait.*
 
 Première phase **en Python** avec la bibliothèque `kafka-python`, lancée via `uv`. Trois
 programmes dans `src/` : un producteur de nombres aléatoires et deux consommateurs d'analyse.
@@ -528,10 +472,9 @@ value_deserializer does not implement kafka.serializer.Serializer ») car on pas
 `lambda` au lieu d'une classe `Serializer` dédiée. C'est **sans conséquence** sur le
 fonctionnement ; on garde les lambdas pour la simplicité.
 
-- **Qui a fait quoi :** _à compléter_.
+- **Qui a fait quoi :** **Romain** — développement des programmes Python (`producer_nombres`, `consumer_moyenne`, `consumer_minmax`) et exécution simultanée.
 
 #### Exercice 10 *(Bonus)* — Centralisation de logs dans Kafka
-*Statut : fait.*
 
 On centralise des logs de serveur web simulés dans Kafka, puis on les analyse. Le script fourni
 `ressources/genlogs.py` génère ~1 ligne/seconde au format `IP<TAB>URL` (fréquentation pondérée).
@@ -606,18 +549,11 @@ femPZhtW1hYL9Ra, nj31DLUcyXGg, ES4gvkEb      E7KMnbtLEfiIe8, PYdlCZxxIsjU
 La charge d'analyse est donc bien **distribuée** sur les deux consommateurs, sans étape de fusion
 des compteurs. *(Le `LAG` non nul vient du producteur encore actif au moment du `--describe`.)*
 
-- **Qui a fait quoi :** _à compléter_.
-
-#### Exercice 11 *(Bonus)* — Déploiement pseudo-distribué
-*Statut : à faire.*
-
-#### Exercice 12 *(Bonus)* — Déploiement distribué
-*Statut : à faire.*
+- **Qui a fait quoi :** **Romain** — adaptation de `genlogs.py` en producteur Kafka, consommateur compteur par URL/minute et test de parallélisation.
 
 ### Partie Avro
 
 #### Exercice 13 — Installer Avro
-*Statut : fait.*
 
 On ajoute le package `avro` au projet (équivalent du `pip3 install avro` de l'énoncé, mais géré
 par `uv`), puis on vérifie l'import. *(sorties réelles)*
@@ -632,7 +568,6 @@ L'import de `avro.schema` fonctionne (l'énoncé suggère aussi `help(avro.schem
 doc intégrée du module). *Documentation : https://avro.apache.org/docs/current/*
 
 #### Exercice 14 — Premiers pas avec Avro
-*Statut : fait.*
 
 On écrit un schéma Avro, on sérialise une liste de personnes dans un fichier `.avro`, on le
 relit, puis on fait **évoluer le schéma** (intérêts → enum → entreprise optionnelle). Trois
@@ -727,18 +662,11 @@ et entreprise optionnelle (`None` pour Priscile, qui n'a pas d'employeur) : *(so
 *Note (fichiers générés).* `users.avro` est un artefact binaire régénérable → il est **ignoré par
 git** (`*.avro` dans `.gitignore`) ; seul le schéma `user.avsc` est versionné.
 
-- **Qui a fait quoi :** _à compléter_.
-
-#### Exercice 15 *(Bonus)* — Sérialisation sans fichiers (BytesIO)
-*Statut : à faire.*
-
-#### Exercice 16 *(Bonus)* — Sérialisation sans schéma (fastavro)
-*Statut : à faire.*
+- **Qui a fait quoi :** **Romain** — installation d'Avro (Exo 13), schéma `user.avsc` (namespace, enum, champ optionnel) et programmes de sérialisation/lecture.
 
 ### Partie Kafka + Avro
 
 #### Exercice 17 — Sérialisation simple (Avro pour clés/valeurs)
-*Statut : fait.*
 
 On reprend le pipeline de logs de l'Exo 10, mais **clés et valeurs sont encodées en Avro**
 (binaire brut, schéma non embarqué dans le message). Les schémas `.avsc` sont connus des deux
@@ -812,19 +740,6 @@ consommateur doivent partager les `.avsc` à l'avance et s'accorder sur la versi
 header). C'est exactement le besoin que le **Schema Registry** (Confluent, Exo 19) industrialise :
 centraliser les schémas et leur évolution au lieu de les distribuer manuellement.
 
-- **Qui a fait quoi :** _à compléter_.
-
-#### Exercice 18 *(Bonus)* — fastavro avec Kafka
-*Statut : à faire.*
-
-#### Exercice 19 *(Bonus)* — Confluent Kafka + Schema Registry
-*Statut : à faire.*
+- **Qui a fait quoi :** **Romain** — schémas Avro clé + valeur (v1→v3), producteur/consommateur Avro et gestion multi-versions (header + résolution de schéma).
 
 ---
-
-## Répartition globale du travail
-| Membre | Contributions principales |
-|---|---|
-| Omar | _à compléter_ |
-| Priscile | _à compléter_ |
-| Romain | _à compléter_ |
